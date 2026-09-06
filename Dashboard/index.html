@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Full Time — Global Football Elo Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;700;800;900&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#F5F3EC;
+  --panel:#FCFBF7;
+  --ink:#152B24;
+  --ink-soft:#4B5C55;
+  --pitch:#1F4A34;
+  --pitch-deep:#123424;
+  --marigold:#E5A22B;
+  --marigold-deep:#B87D18;
+  --chalk-line:#D8D3C4;
+  --loss:#B3462E;
+  --win:#1F4A34;
+  --draw:#8A7A4E;
+  --shadow: 0 1px 0 rgba(21,43,36,0.08);
+  --radius: 3px;
+}
+*{box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{
+  margin:0;
+  background:var(--paper);
+  color:var(--ink);
+  font-family:'IBM Plex Sans', -apple-system, sans-serif;
+  font-size:15px;
+  line-height:1.5;
+  -webkit-font-smoothing:antialiased;
+}
+::selection{ background:var(--marigold); color:var(--pitch-deep); }
+a{ color:inherit; }
+.wrap{ max-width:1180px; margin:0 auto; padding:0 28px; }
+h1,h2,h3,h4{
+  font-family:'Big Shoulders Display', sans-serif;
+  font-weight:800;
+  letter-spacing:0.2px;
+  margin:0;
+  color:var(--pitch-deep);
+}
+.num, .mono{ font-family:'IBM Plex Mono', monospace; }
+
+/* ===== Header / Masthead ===== */
+header.masthead{
+  border-bottom:3px solid var(--pitch-deep);
+  background:linear-gradient(180deg, #FAF8F1 0%, var(--paper) 100%);
+  padding-top:26px;
+}
+.masthead-top{
+  display:flex; justify-content:space-between; align-items:flex-end;
+  padding-bottom:18px;
+}
+.brand{ display:flex; align-items:baseline; gap:12px; }
+.brand .mark{
+  width:14px; height:14px; background:var(--marigold);
+  display:inline-block; border-radius:50%;
+  box-shadow: 3px 0 0 var(--pitch-deep);
+  margin-right:8px; transform:translateY(-2px);
+}
+.brand h1{ font-size:34px; line-height:1; }
+.brand .sub{
+  font-size:13px; color:var(--ink-soft); font-family:'IBM Plex Mono',monospace;
+  letter-spacing:0.03em;
+}
+.masthead-meta{
+  text-align:right; font-size:12.5px; color:var(--ink-soft);
+  font-family:'IBM Plex Mono', monospace;
+}
+
+/* Scoreboard ticker strip */
+.ticker{
+  display:flex;
+  border-top:1px solid var(--chalk-line);
+  border-bottom:1px solid var(--chalk-line);
+}
+.ticker .stat{
+  flex:1;
+  padding:16px 20px;
+  border-right:1px solid var(--chalk-line);
+}
+.ticker .stat:last-child{ border-right:none; }
+.ticker .stat .v{
+  font-family:'Big Shoulders Display', sans-serif;
+  font-weight:800;
+  font-size:32px;
+  color:var(--pitch);
+  line-height:1;
+}
+.ticker .stat .l{
+  font-size:12px;
+  color:var(--ink-soft);
+  margin-top:4px;
+}
+
+/* ===== Nav tabs ===== */
+nav.tabs{
+  display:flex; gap:2px;
+  margin-top:0;
+  background:var(--pitch-deep);
+  overflow-x:auto;
+  -webkit-overflow-scrolling:touch;
+  scrollbar-width:none;
+}
+nav.tabs::-webkit-scrollbar{ display:none; }
+nav.tabs button{
+  font-family:'Big Shoulders Display', sans-serif;
+  font-weight:700;
+  font-size:17px;
+  background:transparent;
+  color:#CBD9CE;
+  border:none;
+  padding:12px 26px;
+  cursor:pointer;
+  letter-spacing:0.3px;
+  transition:background 0.15s, color 0.15s;
+  white-space:nowrap;
+  flex-shrink:0;
+}
+nav.tabs button:hover{ background:rgba(255,255,255,0.06); color:#fff; }
+nav.tabs button.active{ background:var(--paper); color:var(--pitch-deep); }
+
+main{ padding:32px 0 80px; }
+section.view{ display:none; }
+section.view.active{ display:block; }
+
+.section-head{
+  display:flex; justify-content:space-between; align-items:flex-end;
+  margin-bottom:16px; gap:20px; flex-wrap:wrap;
+}
+.section-head h2{ font-size:26px; }
+.section-head p{ margin:4px 0 0; color:var(--ink-soft); font-size:14px; max-width:52ch; }
+
+/* Panels */
+.panel{
+  background:var(--panel);
+  border:1px solid var(--chalk-line);
+  border-left:4px solid var(--pitch);
+  border-radius:var(--radius);
+  padding:20px 22px;
+  margin-bottom:22px;
+}
+.panel.amber{ border-left-color:var(--marigold); }
+.panel-title{
+  font-size:12px; text-transform:none; color:var(--ink-soft);
+  font-family:'IBM Plex Mono', monospace; letter-spacing:0.02em;
+  margin-bottom:12px; display:flex; justify-content:space-between; align-items:center;
+}
+
+/* Controls */
+.controls{ display:flex; gap:10px; flex-wrap:wrap; margin-bottom:18px; }
+.controls input[type=text], .controls select{
+  font-family:'IBM Plex Sans', sans-serif;
+  font-size:14px;
+  padding:9px 12px;
+  border:1px solid var(--chalk-line);
+  background:#fff;
+  border-radius:var(--radius);
+  color:var(--ink);
+}
+.controls input[type=text]{ min-width:220px; }
+.controls select{ min-width:170px; }
+.controls input:focus, .controls select:focus{
+  outline:2px solid var(--marigold); outline-offset:1px;
+}
+.pill-group{ display:flex; gap:6px; flex-wrap:wrap; }
+.pill{
+  font-family:'IBM Plex Mono', monospace;
+  font-size:12.5px;
+  padding:7px 12px;
+  border:1px solid var(--chalk-line);
+  background:#fff;
+  border-radius:20px;
+  cursor:pointer;
+  color:var(--ink-soft);
+}
+.pill.active{ background:var(--pitch); color:#fff; border-color:var(--pitch); }
+
+/* Tables */
+table{ width:100%; border-collapse:collapse; font-size:13.5px; }
+table.data th{
+  text-align:left; font-family:'IBM Plex Mono', monospace; font-weight:600;
+  font-size:11.5px; color:var(--ink-soft); text-transform:none;
+  padding:9px 10px; border-bottom:2px solid var(--pitch-deep);
+  cursor:pointer; white-space:nowrap; user-select:none;
+}
+table.data th:hover{ color:var(--pitch-deep); }
+table.data th .arrow{ opacity:0.5; margin-left:3px; font-size:10px; }
+table.data td{
+  padding:8px 10px; border-bottom:1px solid var(--chalk-line);
+  white-space:nowrap;
+}
+table.data td.wrap-cell{ white-space:normal; }
+table.data tbody tr:hover{ background:rgba(31,74,52,0.06); cursor:pointer; }
+table.data tbody tr:last-child td{ border-bottom:none; }
+.num-cell{ font-family:'IBM Plex Mono', monospace; text-align:right; }
+.rank{ color:var(--ink-soft); font-family:'IBM Plex Mono', monospace; }
+.team-link{ color:var(--pitch-deep); font-weight:600; cursor:pointer; }
+.team-link:hover{ text-decoration:underline; }
+.tag{
+  display:inline-block; font-family:'IBM Plex Mono', monospace; font-size:10.5px;
+  padding:2px 7px; border-radius:20px; border:1px solid var(--chalk-line); color:var(--ink-soft);
+}
+.result-chip{
+  display:inline-block; width:20px; text-align:center; font-size:11px; font-weight:700;
+  font-family:'IBM Plex Mono', monospace; border-radius:2px; padding:1px 0; color:#fff;
+}
+.result-chip.W{ background:var(--win); }
+.result-chip.D{ background:var(--draw); }
+.result-chip.L{ background:var(--loss); }
+.elo-diff.pos{ color:var(--pitch); }
+.elo-diff.neg{ color:var(--loss); }
+.scroll-x{ overflow-x:auto; }
+
+.table-note{ font-size:12px; color:var(--ink-soft); margin-top:10px; }
+
+/* grid layouts */
+.grid-2{ display:grid; grid-template-columns:1.4fr 1fr; gap:22px; align-items:start; }
+.grid-3{ display:grid; grid-template-columns:repeat(3, 1fr); gap:16px; }
+@media (max-width: 880px){
+  .grid-2{ grid-template-columns:1fr; }
+  .grid-3{ grid-template-columns:1fr; }
+  .ticker{ flex-wrap:wrap; }
+  .ticker .stat{ flex:1 1 50%; border-bottom:1px solid var(--chalk-line); }
+}
+
+/* Team view */
+.team-header{ display:flex; justify-content:space-between; align-items:flex-start; gap:18px; flex-wrap:wrap; margin-bottom:6px;}
+.team-header h2{ font-size:30px; }
+.team-header .meta{ font-size:13px; color:var(--ink-soft); margin-top:4px;}
+.big-elo{ text-align:right; }
+.big-elo .v{ font-family:'Big Shoulders Display'; font-weight:800; font-size:40px; color:var(--pitch); line-height:1;}
+.big-elo .l{ font-size:11.5px; color:var(--ink-soft); font-family:'IBM Plex Mono', monospace;}
+
+.chart-wrap{ width:100%; }
+.chart-wrap svg{ width:100%; height:auto; display:block; }
+.axis-label{ font-size:10px; fill:var(--ink-soft); font-family:'IBM Plex Mono', monospace; }
+.chart-line{ fill:none; stroke:var(--pitch); stroke-width:2; }
+.chart-line.dashed{ stroke-dasharray:6 5; stroke:var(--ink-soft); opacity:0.65; }
+.chart-area{ fill:url(#eloGradient); opacity:0.5;}
+.chart-dot{ fill:var(--marigold); stroke:var(--pitch-deep); stroke-width:1.5; }
+.chart-grid line{ stroke:var(--chalk-line); stroke-width:1; }
+.chart-hits circle{ fill:transparent; cursor:crosshair; }
+.chart-tooltip{
+  position:absolute; transform:translate(-50%, -115%);
+  background:var(--pitch-deep); color:#fff;
+  font-family:'IBM Plex Mono', monospace; font-size:12px; line-height:1.4;
+  padding:6px 10px; border-radius:3px; white-space:nowrap;
+  pointer-events:none; opacity:0; transition:opacity 0.1s;
+  z-index:5;
+}
+.chart-tooltip.show{ opacity:1; }
+.chart-tooltip strong{ color:var(--marigold); font-size:13px; }
+.chart-legend{
+  display:flex; flex-wrap:wrap; gap:18px; margin-top:10px;
+  font-size:12px; color:var(--ink-soft);
+}
+.legend-item{ display:flex; align-items:center; gap:6px; }
+.legend-swatch{ display:inline-block; width:22px; height:0; border-top:2px solid var(--pitch); }
+.legend-swatch.dashed{ border-top:2px dashed var(--ink-soft); }
+
+/* Overview stat cards */
+.stat-card{
+  background:var(--panel); border:1px solid var(--chalk-line); border-left:4px solid var(--pitch);
+  border-radius:var(--radius); padding:16px 18px;
+}
+.stat-card .v{ font-family:'Big Shoulders Display'; font-weight:800; font-size:28px; color:var(--pitch); line-height:1; }
+.stat-card .l{ font-size:12px; color:var(--ink-soft); margin-top:6px; }
+
+/* Generic chart primitives (bar/donut/radar) */
+.chart-svg-wrap svg{ width:100%; height:auto; display:block; overflow:visible; }
+.bar-rect{ fill:var(--pitch); }
+.bar-rect.amber{ fill:var(--marigold); }
+.bar-label{ font-size:10.5px; fill:var(--ink-soft); font-family:'IBM Plex Mono', monospace; }
+.bar-value{ font-size:10.5px; fill:var(--pitch-deep); font-family:'IBM Plex Mono', monospace; font-weight:600; }
+.donut-legend{ display:flex; gap:16px; flex-wrap:wrap; justify-content:center; margin-top:10px; font-size:12.5px; color:var(--ink-soft); }
+.donut-legend .item{ display:flex; align-items:center; gap:6px; }
+.donut-legend .swatch{ width:10px; height:10px; border-radius:2px; display:inline-block; }
+.multi-line-legend{ display:flex; gap:16px; flex-wrap:wrap; margin-top:8px; font-size:12px; color:var(--ink-soft); }
+.multi-line-legend .item{ display:flex; align-items:center; gap:6px; }
+.multi-line-legend .swatch{ width:16px; height:0; border-top:3px solid; display:inline-block; }
+.radar-axis-label{ font-size:10px; fill:var(--ink-soft); font-family:'IBM Plex Mono', monospace; }
+
+/* Compare page pills with remove */
+.pill.removable{ display:flex; align-items:center; gap:6px; background:var(--pitch); color:#fff; border-color:var(--pitch); }
+.pill.removable .x{ cursor:pointer; opacity:0.8; font-weight:700; }
+.pill.removable .x:hover{ opacity:1; }
+.cmp-color-dot{ width:9px; height:9px; border-radius:50%; display:inline-block; }
+
+.empty-state{
+  padding:50px 20px; text-align:center; color:var(--ink-soft);
+}
+.empty-state h3{ color:var(--ink-soft); font-size:20px; margin-bottom:6px; }
+
+.autocomplete{ position:relative; }
+.ac-results{
+  position:absolute; top:100%; left:0; right:0; background:#fff;
+  border:1px solid var(--chalk-line); border-top:none; max-height:280px;
+  overflow-y:auto; z-index:20; box-shadow:0 6px 14px rgba(21,43,36,0.12);
+  display:none;
+}
+.ac-results.show{ display:block; }
+.ac-results div{ padding:9px 12px; cursor:pointer; font-size:13.5px; display:flex; justify-content:space-between; }
+.ac-results div:hover, .ac-results div.hi{ background:var(--paper); }
+.ac-results .ac-elo{ font-family:'IBM Plex Mono', monospace; color:var(--ink-soft); font-size:12px; }
+
+.pager{ display:flex; gap:8px; align-items:center; margin-top:12px; font-size:13px; color:var(--ink-soft); }
+.pager button{
+  font-family:'IBM Plex Mono', monospace; border:1px solid var(--chalk-line); background:#fff;
+  padding:5px 10px; cursor:pointer; border-radius:var(--radius);
+}
+.pager button:disabled{ opacity:0.35; cursor:default; }
+
+.footer{
+  border-top:3px solid var(--pitch-deep); margin-top:40px; padding:22px 0;
+  font-size:12px; color:var(--ink-soft); font-family:'IBM Plex Mono', monospace;
+}
+
+.badge-cat{ font-size:10.5px; color:var(--ink-soft); }
+
+::-webkit-scrollbar{ height:8px; width:8px; }
+::-webkit-scrollbar-thumb{ background:var(--chalk-line); border-radius:4px; }
+</style>
+</head>
+<body>
+
+<header class="masthead">
+  <div class="wrap masthead-top">
+    <div class="brand">
+      <h1><span class="mark"></span>Full Time</h1>
+      <span class="sub">Elo &amp; results across world football</span>
+    </div>
+    <div class="masthead-meta" id="dateRangeMeta">Loading…</div>
+  </div>
+  <div class="wrap"><div class="ticker" id="tickerStats"></div></div>
+  <div class="wrap">
+    <nav class="tabs">
+      <button data-view="overview" class="active">Overview</button>
+      <button data-view="leagues">Leagues</button>
+      <button data-view="competition">Competition</button>
+      <button data-view="rankings">Rankings</button>
+      <button data-view="compare">Compare</button>
+      <button data-view="insights">Insights</button>
+      <button data-view="teams">Teams</button>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <!-- OVERVIEW VIEW -->
+  <section class="view active" id="view-overview">
+    <div class="section-head">
+      <div>
+        <h2>Season at a glance</h2>
+        <p>A global read on <span id="ovSeasonsSpan">five seasons</span> of results and Elo movement across every tracked competition.</p>
+      </div>
+    </div>
+
+    <div class="grid-3" id="ovStatCards" style="margin-bottom:22px;"></div>
+
+    <div class="grid-2">
+      <div class="panel">
+        <div class="panel-title"><span>Matches played per season</span></div>
+        <div id="ovSeasonChart"></div>
+      </div>
+      <div class="panel">
+        <div class="panel-title"><span>Result split, all matches</span></div>
+        <div id="ovResultChart"></div>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="panel">
+        <div class="panel-title"><span>Average goals per match, by season</span></div>
+        <div id="ovGoalsChart"></div>
+      </div>
+      <div class="panel">
+        <div class="panel-title"><span>Top 10 clubs by current Elo</span></div>
+        <div class="scroll-x">
+          <table class="data" id="ovTopEloTable"><thead><tr>
+            <th>#</th><th>Club</th><th>Country</th><th class="num-cell">Elo</th>
+          </tr></thead><tbody></tbody></table>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- LEAGUES VIEW -->
+  <section class="view" id="view-leagues">
+    <div class="section-head">
+      <div>
+        <h2>League strength table</h2>
+        <p>Five seasons of results and Elo ratings rolled up by competition, ranked by average Elo rating.</p>
+      </div>
+    </div>
+    <div class="controls">
+      <input type="text" id="leagueSearch" placeholder="Search country or competition…">
+      <select id="leagueCategoryFilter"><option value="">All tiers</option></select>
+    </div>
+    <div class="panel">
+      <div class="panel-title"><span id="leagueCount">— competitions</span></div>
+      <div class="scroll-x">
+        <table class="data" id="leagueTable">
+          <thead><tr>
+            <th data-key="country">Country</th>
+            <th data-key="comp">Competition</th>
+            <th data-key="category">Tier</th>
+            <th data-key="clubs" class="num-cell">Clubs</th>
+            <th data-key="P" class="num-cell">Matches</th>
+            <th data-key="G" class="num-cell">Goals/match</th>
+            <th data-key="rating" class="num-cell">Avg Elo</th>
+            <th data-key="stddev" class="num-cell">Parity σ%</th>
+          </tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <p class="table-note">Parity σ% is the standard deviation of club Elo within the league — lower means a tighter, more competitive division. Click a row to open it in the Competition tab.</p>
+    </div>
+  </section>
+
+  <!-- COMPETITION VIEW -->
+  <section class="view" id="view-competition">
+    <div class="section-head">
+      <div>
+        <h2 id="compTitle">Competition explorer</h2>
+        <p id="compSub">Pick a competition and season to see the table, form and results.</p>
+      </div>
+    </div>
+    <div class="controls">
+      <select id="compSelect"></select>
+      <div class="pill-group" id="seasonPills"></div>
+    </div>
+
+    <div id="compContent"></div>
+  </section>
+
+  <!-- RANKINGS VIEW -->
+  <section class="view" id="view-rankings">
+    <div class="section-head">
+      <div>
+        <h2>Global Elo rankings</h2>
+        <p>Every tracked club ranked by its current Elo rating, with country context.</p>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-title"><span>Top 15 by Elo</span></div>
+      <div id="rkTopChart"></div>
+    </div>
+    <div class="controls">
+      <input type="text" id="rkSearch" placeholder="Search a club…">
+      <select id="rkCountryFilter"><option value="">All countries</option></select>
+    </div>
+    <div class="panel">
+      <div class="panel-title"><span id="rkCount">— clubs</span></div>
+      <div class="scroll-x">
+        <table class="data" id="rkTable"><thead><tr>
+          <th data-key="rank">#</th><th data-key="team">Club</th><th data-key="country">Country</th>
+          <th data-key="elo" class="num-cell">Elo</th>
+        </tr></thead><tbody></tbody></table>
+      </div>
+      <div class="pager" id="rkPager"></div>
+    </div>
+  </section>
+
+  <!-- COMPARE VIEW -->
+  <section class="view" id="view-compare">
+    <div class="section-head">
+      <div>
+        <h2>League comparison</h2>
+        <p>Pick two to five competitions to compare side by side on goals, Elo, and parity.</p>
+      </div>
+    </div>
+    <div class="controls autocomplete" style="max-width:420px;">
+      <input type="text" id="cmpSearch" placeholder="Add a competition to compare…" autocomplete="off">
+      <div class="ac-results" id="cmpAcResults"></div>
+    </div>
+    <div class="pill-group" id="cmpSelected" style="margin-bottom:18px;"></div>
+    <div id="cmpContent"><div class="empty-state"><h3>Pick at least two competitions</h3><p>Search above to add them to the comparison.</p></div></div>
+  </section>
+
+  <!-- INSIGHTS VIEW -->
+  <section class="view" id="view-insights">
+    <div class="section-head">
+      <div>
+        <h2>Form, fatigue &amp; the Elo model</h2>
+        <p>Derived from each match's pre-computed rest days, schedule load, and rolling form going into kickoff.</p>
+      </div>
+    </div>
+    <div class="grid-2">
+      <div class="panel">
+        <div class="panel-title"><span>Result probability by pre-match Elo gap</span></div>
+        <div id="inEloGapChart"></div>
+        <p class="table-note">Elo gap = home team's Elo minus away team's, grouped in bands going into the match. A working Elo model should show home win % rising steadily left to right.</p>
+      </div>
+      <div class="panel">
+        <div class="panel-title"><span>Home win rate by days of rest</span></div>
+        <div id="inRestChart"></div>
+        <p class="table-note">Days since the home side's previous match, grouped into bands.</p>
+      </div>
+    </div>
+    <div class="grid-2">
+      <div class="panel">
+        <div class="panel-title"><span>Goals scored by schedule congestion</span></div>
+        <div id="inCongestionChart"></div>
+        <p class="table-note">Home goals scored, grouped by how many matches that club had played in the previous 180 days.</p>
+      </div>
+      <div class="panel">
+        <div class="panel-title"><span>Win rate by recent Elo trend</span></div>
+        <div id="inFormChart"></div>
+        <p class="table-note">Home team's Elo trend over its last 5 matches going into kickoff — cooling, stable, or hot.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- TEAMS VIEW -->
+  <section class="view" id="view-teams">
+    <div class="section-head">
+      <div>
+        <h2>Team lookup</h2>
+        <p>Search any of the <span id="teamsCountSpan">2,300+</span> clubs tracked since <span id="sinceSpan">July 2021</span> for their Elo history and results.</p>
+      </div>
+    </div>
+    <div class="controls autocomplete" style="max-width:420px;">
+      <input type="text" id="teamSearch" placeholder="Search a club — e.g. Arsenal, Boca Juniors…" autocomplete="off">
+      <div class="ac-results" id="acResults"></div>
+    </div>
+    <div id="teamContent">
+      <div class="empty-state"><h3>No club selected</h3><p>Search above to pull up a club's Elo trend and match log.</p></div>
+    </div>
+  </section>
+
+</main>
+
+<div class="footer">
+  <div class="wrap" id="footerText">Full Time — built from match results and Elo ratings across every tracked competition worldwide.</div>
+</div>
+
+<script src="data.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
